@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -22,7 +21,7 @@ type Likes struct {
 // main
 func main() {
 	router := mux.NewRouter()
-	http.Handle("/resources/", http.StripPrefix("/resources/", http.FileServer(http.Dir("resources/"))))
+	http.Handle("/src/", http.StripPrefix("/src/", http.FileServer(http.Dir("src/"))))
 	router.Handle("/", http.FileServer(http.Dir("static")))
 	router.HandleFunc("/api/likes", getLikesHandler).Methods("GET")
 	router.HandleFunc("/api/likes", postLikeHandler).Methods("POST")
@@ -48,7 +47,6 @@ func getLikesHandler(w http.ResponseWriter, r *http.Request) {
 	likes := Likes{
 		Likes: result,
 	}
-	log.Print(result)
 	j, _ := json.Marshal(likes)
 	w.Write(j)
 }
