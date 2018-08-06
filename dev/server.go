@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -9,6 +10,10 @@ import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
+
+//
+const DB_DNS = "mongodb://localhost/test"
+const DB_NAME = "test"
 
 // 単純な構造体
 type Like struct {
@@ -18,6 +23,15 @@ type Likes struct {
 	Likes []Like
 }
 
+type Comment struct {
+	Content   string    `bson:"content"`
+	Timestamp time.Time `bson:"time"`
+}
+
+type Comments struct {
+	Comments []Comment
+}
+
 // main
 func main() {
 	router := mux.NewRouter()
@@ -25,6 +39,7 @@ func main() {
 	router.Handle("/", http.FileServer(http.Dir("static")))
 	router.HandleFunc("/api/likes", getLikesHandler).Methods("GET")
 	router.HandleFunc("/api/likes", postLikeHandler).Methods("POST")
+	router.HandleFunc("/api/comments", getCommentsHandler).Methods("GET")
 
 	http.Handle("/", router)
 	http.ListenAndServe(":8080", nil)
@@ -33,9 +48,9 @@ func main() {
 func getLikesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	session, _ := mgo.Dial("mongodb://localhost/test")
+	session, _ := mgo.Dial(DB_DNS)
 	defer session.Close()
-	db := session.DB("test")
+	db := session.DB(DB_NAME)
 
 	//log.Print(db)
 
@@ -54,9 +69,9 @@ func getLikesHandler(w http.ResponseWriter, r *http.Request) {
 func postLikeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	session, _ := mgo.Dial("mongodb://localhost/test")
+	session, _ := mgo.Dial(DB_DNS)
 	defer session.Close()
-	db := session.DB("test")
+	db := session.DB(DB_NAME)
 
 	like := &Like{
 		Timestamp: time.Now(),
@@ -65,5 +80,28 @@ func postLikeHandler(w http.ResponseWriter, r *http.Request) {
 	col.Insert(like)
 
 	j, _ := json.Marshal(like)
+	w.Write(j)
+}
+
+func getCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	session, _ := mgo.Dial(DB_DNS)
+	defer session.Close()
+	db := session.DB(DB_NAME)
+
+	var result []Comment
+	err := db.C("comment").Find(bson.M{}).All(&result)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("", result)
+	print(result)
+
+	comments := Comments{
+		Comments: result,
+	}
+	j, _ := json.Marshal(comments)
 	w.Write(j)
 }
