@@ -56,6 +56,7 @@ document.getElementById('comment').onclick = function() {
         fetch('api/comments', {
             method : 'POST',
             body : 'content=' + content,
+            headers : new Headers({'Content-type' : 'application/x-www-form-urlencoded' })
         }).then(res => res.text())
         .then(text => console.log(text));
     }
