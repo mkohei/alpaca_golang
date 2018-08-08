@@ -40,6 +40,7 @@ func main() {
 	router.HandleFunc("/api/likes", getLikesHandler).Methods("GET")
 	router.HandleFunc("/api/likes", postLikeHandler).Methods("POST")
 	router.HandleFunc("/api/comments", getCommentsHandler).Methods("GET")
+	router.HandleFunc("/api/comments", postCommentsHandler).Methods("POST")
 
 	http.Handle("/", router)
 	http.ListenAndServe(":8080", nil)
@@ -103,5 +104,24 @@ func getCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		Comments: result,
 	}
 	j, _ := json.Marshal(comments)
+	w.Write(j)
+}
+
+func postCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	session, _ := mgo.Dial(DB_DNS)
+	defer session.Close()
+	db := session.DB(DB_NAME)
+
+	content := r.FormValue("content")
+	comment := &Comment{
+		Content:   content,
+		Timestamp: time.Now(),
+	}
+	col := db.C("comment")
+	col.Insert(comment)
+
+	j, _ := json.Marshal(comment)
 	w.Write(j)
 }
