@@ -3,10 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/net/websocket"
+
+	//"github.com/gorilla/websocket"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -35,12 +40,14 @@ type Comments struct {
 // main
 func main() {
 	router := mux.NewRouter()
-	http.Handle("/src/", http.StripPrefix("/src/", http.FileServer(http.Dir("src/"))))
-	router.Handle("/", http.FileServer(http.Dir("static")))
+
 	router.HandleFunc("/api/likes", getLikesHandler).Methods("GET")
 	router.HandleFunc("/api/likes", postLikeHandler).Methods("POST")
 	router.HandleFunc("/api/comments", getCommentsHandler).Methods("GET")
 	router.HandleFunc("/api/comments", postCommentsHandler).Methods("POST")
+	http.Handle("/echo", websocket.Handler(wsEchoHandler))
+	router.PathPrefix("/src/").Handler(http.StripPrefix("/src/", http.FileServer(http.Dir("src/"))))
+	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("static"))))
 
 	http.Handle("/", router)
 	http.ListenAndServe(":8080", nil)
@@ -124,4 +131,9 @@ func postCommentsHandler(w http.ResponseWriter, r *http.Request) {
 
 	j, _ := json.Marshal(comment)
 	w.Write(j)
+}
+
+func wsEchoHandler(ws *websocket.Conn) {
+	log.Println("connect")
+	io.Copy(ws, ws)
 }
